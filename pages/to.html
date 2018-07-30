@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Dashboard</title>
+    <!-- Bootstrap Core CSS -->
+    <link href="../vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <!-- MetisMenu CSS -->
+    <link href="../vendor/metisMenu/metisMenu.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="../dist/css/sb-admin-2.css" rel="stylesheet">
+    <!-- Custom Fonts -->
+    <link href="../vendor/font-awesome/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+    <link href="../dist/css/eu.css" rel="stylesheet" type="text/css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/reqwest/2.0.5/reqwest.min.js"></script>
+    <script src="../js/d3.v3.min.js"></script>
+    <script src="../js/d3.tip.v0.6.3.js"></script>
+    <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+    <script src="../js/d3pie.min.js"></script>
+    <script type="text/javascript">
+        Number.prototype.formatMoney = function(c, d, t){
+            var n = this, 
+            c = isNaN(c = Math.abs(c)) ? 2 : c, 
+            d = d == undefined ? "," : d, 
+            t = t == undefined ? "." : t, 
+            s = n < 0 ? "-" : "", 
+            i = String(parseInt(n = Math.abs(Number(n) || 0).toFixed(c))), 
+            j = (j = i.length) > 3 ? j % 3 : 0;
+            return s + (j ? i.substr(0, j) + t : "") + i.substr(j).replace(/(\d{3})(?=\d)/g, "$1" + t) + (c ? d + Math.abs(n - i).toFixed(c).slice(2) : "");
+        };
+        function responsivefy(svg) {
+            // get container + svg aspect ratio
+            var container = d3.select(svg.node().parentNode),
+                width = parseInt(svg.style("width")),
+                height = parseInt(svg.style("height")),
+                aspect = width / height;
+            // add viewBox and preserveAspectRatio properties,
+            // and call resize so that svg resizes on inital page load
+            svg.attr("viewBox", "0 0 " + width + " " + height)
+                .attr("perserveAspectRatio", "xMinYMid")
+                .call(resize);
+            // to register multiple listeners for same event type, 
+            // you need to add namespace, i.e., 'click.foo'
+            // necessary if you call invoke this function for multiple svgs
+            // api docs: https://github.com/mbostock/d3/wiki/Selections#on
+            d3.select(window).on("resize." + container.attr("id"), resize);
+            // get width of container and resize svg to fit it
+            function resize() {
+                var targetWidth = parseInt(container.style("width"));
+                svg.attr("width", targetWidth);
+                svg.attr("height", Math.round(targetWidth / aspect));
+            }
+        }
+		function changestats(selText, selValue){
+			$("#totitle").text(selText);
+			var urlstats='http://88.99.13.199:3000/to_aggregate?to=eq.';
+			urlstats=urlstats.concat(selValue);
+			var stats=[];
+			$.getJSON(urlstats, function(mydata) {
+				stats.push(mydata[0]);
+				funds=Number(stats[0]['funds']/1000000000).toFixed(2);
+				document.getElementById("funds").innerHTML=funds;
+				decisions=Number(stats[0]['decisions']/1000000000).toFixed(2);
+				document.getElementById("decisions").innerHTML=decisions;
+				payments=Number(stats[0]['payments']/1000000000).toFixed(2);
+				document.getElementById("payments").innerHTML=payments;
+				pct=Number(stats[0]['pct']*100).toFixed(2);
+				document.getElementById("pct").innerHTML=pct;
+			});
+		}
+		function msorder(selValue){
+			d3.select("#msorder").selectAll("svg").remove();
+			var marginmsorder = {top: 25, right: 20, bottom: 80, left: 50},
+				widthmsorder = 600 - marginmsorder.left - marginmsorder.right,
+				heightmsorder = 300 - marginmsorder.top - marginmsorder.bottom;
+			var formatPercent = d3.format(".0%");
+			var xmsorder = d3.scale.ordinal()
+				.rangeRoundBands([0, widthmsorder], .1, 1);
+			var ymsorder = d3.scale.linear()
+				.range([heightmsorder, 0]);
+			var xAxismsorder = d3.svg.axis()
+				.scale(xmsorder)
+				.orient("bottom");
+			var yAxismsorder = d3.svg.axis()
+				.scale(ymsorder)
+				.orient("left")
+				.tickFormat(formatPercent);
+			var svgmsorder = d3.select("#msorder").append("svg")
+				.attr("width", widthmsorder + marginmsorder.left + marginmsorder.right)
+				.attr("height", heightmsorder + marginmsorder.top + marginmsorder.bottom)
+				.call(responsivefy)
+				.append("g")
+				.attr("transform", "translate(" + marginmsorder.left + "," + marginmsorder.top + ")");
+            var urlfund='http://88.99.13.199:3000/to_ms_aggregate?to=eq.';
+            urlfund=urlfund.concat(selValue);
+			d3.json(urlfund, function(error, data) {
+				data.forEach(function(d) {
+				d.pct = +d.pct;
+				});
+				xmsorder.domain(data.map(function(d) { return d.letter; }));
+				ymsorder.domain([0, d3.max(data, function(d) { return d.pct; })]);
+				var tipmsorder = d3.tip()
+					.attr('class', 'd3-tip')
+					.offset([-10, 0])
+					.html(function(d) {
+				return "<span style='color:white'>" + d.fullname + ": " + Number(d.pct*100).toFixed(2) + "%</span>";
+				});
+				svgmsorder.append("g")
+					.attr("class", "x axis")
+					.attr("transform", "translate(0," + heightmsorder + ")")
+					.call(xAxismsorder)
+					.selectAll("text")
+					.attr("transform", "rotate(-65 12 32)");
+				svgmsorder.append("g")
+					.attr("class", "y axis")
+					.call(yAxismsorder)
+					.append("text")
+					.attr("transform", "rotate(-90)")
+					.attr("y", 6)
+					.attr("dy", ".71em")
+					.style("text-anchor", "end")
+					.text("% Funds paid");
+				svgmsorder.selectAll(".barmsorder")
+					.data(data)
+					.enter().append("rect")
+					.attr("class", "barmsorder")
+					.attr("x", function(d) { return xmsorder(d.letter); })
+					.attr("width", xmsorder.rangeBand())
+					.attr("y", function(d) { return ymsorder(d.pct); })
+					.attr("fill", function(d) {
+				if (d.letter ==selValue) {
+					return "#4178b4";
+				} 
+					return "#61b95f";
+				})
+					.attr("height", function(d) { return heightmsorder - ymsorder(d.pct); })
+					.on('mouseover', tipmsorder.show)
+					.on('mouseout', tipmsorder.hide);
+				svgmsorder.call(tipmsorder);
+				d3.select("#input1").on("change", changepro);
+				var sortTimeout = setTimeout(function() {
+					d3.select("#input1").property("checked", true).each(changepro);
+				}, 1000);
+				function changepro() {
+					clearTimeout(sortTimeout);
+					var x0 = xmsorder.domain(data.sort(this.checked
+					? function(a, b) { return b.pct - a.pct; }
+					: function(a, b) { return d3.ascending(a.letter, b.letter); })
+					.map(function(d) { return d.letter; }))
+					.copy();
+				svgmsorder.selectAll(".barmsorder")
+					.sort(function(a, b) { return x0(a.letter) - x0(b.letter); });
+				var transition = svgmsorder.transition().duration(750),
+					delay = function(d, i) { return i * 50; };
+				transition.selectAll(".barmsorder")
+					.delay(delay)
+					.attr("x", function(d) { return x0(d.letter); });
+				transition.select(".x.axis")
+					.call(xAxismsorder)
+					.selectAll("g")
+					.delay(delay);
+				}
+			});
+		};
+		function ms_payments(selValue){
+			d3.select("#chart-line1").selectAll("svg").remove();
+			// Set the dimensions of the canvas / graph
+            var marginlines = {top: 40, right: 30, bottom: 70, left: 70},
+                widthlines = 850 - marginlines.left - marginlines.right,
+                heightlines = 400 - marginlines.top - marginlines.bottom;
+            // Parse the date / time
+            var parseDate = d3.time.format("%Y").parse;
+            // Set the ranges
+            var xlines = d3.time.scale().range([0, widthlines]);
+            var ylines = d3.scale.linear().range([heightlines, 0]);
+            // Define the axes
+            var xAxislines = d3.svg.axis().scale(xlines)
+            	.ticks(d3.time.years, 1)
+                .orient( "bottom" );
+            var yAxislines = d3.svg.axis().scale(ylines)
+                .orient("left").ticks(5);
+            // Define the line
+            var priceline = d3.svg.line()   
+                .x(function(d) { return xlines(d.date); })
+                .y(function(d) { return ylines(d.value); });
+            // Adds the svg canvas
+            var svglines = d3.select("#chart-line1")
+                .append("svg")
+                    .attr("width", widthlines + marginlines.left + marginlines.right)
+                    .attr("height", heightlines + marginlines.top + marginlines.bottom)
+                    .call(responsivefy)
+                .append("g")
+                    .attr("transform", 
+                            "translate(" + marginlines.left + "," + marginlines.top + ")");
+            // Get the data
+            var urlpayments='http://88.99.13.199:3000/fund_payments_years_aggregate_df?order=variable,year&fund=eq.';
+			urlpayments=urlpayments.concat(selValue);
+            d3.json(urlpayments, function(error, data) {
+                data.forEach(function(d) {
+                    d.date = parseDate(d.year);
+                    d.value = +d.value/1000000;
+                });
+                // Scale the range of the data
+                xlines.domain(d3.extent(data, function(d) { return d.date; }));
+                ylines.domain([0, d3.max(data, function(d) { return d.value; })]);
+                // Nest the entries by symbol
+                var dataNest = d3.nest()
+                    .key(function(d) {return d.variable;})
+                    .entries(data);
+                var colorlines = d3.scale.category10();   // set the colour scale
+                legendSpace = widthlines/dataNest.length; // spacing for legend
+                // Loop through each symbol / key
+                dataNest.forEach(function(d,i) { 
+                    svglines.append("path")
+                        .attr("class", "line")
+                        .style("stroke", function() { // Add the colours dynamically
+                            return d.color = colorlines(d.key); })
+                        .attr("d", priceline(d.values));
+                    // Add the Legend
+                    svglines.append("text")
+                        .attr("x", (legendSpace/2)+i*legendSpace) // spacing
+                        .attr("y", heightlines + (marginlines.bottom/2)+ 5)
+                        .attr("class", "legend")    // style the legend
+                        .style("fill", function() { // dynamic colours
+                            return d.color = colorlines(d.key); })
+                        .text(d.key);
+                });
+                // Add the X Axis
+                svglines.append("g")
+                    .attr("class", "x axis")
+                    .attr("transform", "translate(0," + heightlines + ")")
+                    .call(xAxislines);
+                // Add the Y Axis
+                svglines.append("g")
+                    .attr("class", "y axis")
+                    .call(yAxislines);
+                /* Add 'curtain' rectangle to hide entire graph */
+                var curtain = svglines.append('rect')
+                    .attr('x', -1 * widthlines)
+                    .attr('y', -1 * heightlines)
+                    .attr('height', heightlines)
+                    .attr('width', widthlines)
+                    .attr('class', 'curtain')
+                    .attr('transform', 'rotate(180)')
+                    .style('fill', '#ffffff')
+                /* Optionally add a guideline */
+                var guideline = svglines.append('line')
+                    .attr('stroke', '#333')
+                    .attr('stroke-width', 0)
+                    .attr('class', 'guide')
+                    .attr('x1', 1)
+                    .attr('y1', 1)
+                    .attr('x2', 1)
+                    .attr('y2', heightlines)
+                /* Create a shared transition for anything we're animating */
+                var t = svglines.transition()
+                    .duration(1000)
+                    .ease('linear')
+                    .each('end', function() {
+                    d3.select('line.guide')
+                        .transition()
+                        .style('opacity', 0)
+                        .remove()
+                    });
+                t.select('rect.curtain')
+                    .attr('width', 0);
+                t.select('line.guide')
+                    .attr('transform', 'translate(' + widthlines + ', 0)')
+            });
+		}
+        function fundbars(){
+            d3.json("http://88.99.13.199:3000/fund_melt_aggregate_df", function(error, data) {
+                var measuresdata = d3.nest()
+                  .key(function(d) { return d.fund; })
+                  .entries(data)
+                  .map(function(fund) {
+                    return {
+                        name: fund.key,
+                        children: fund.values.map(function(variable) {
+                            return {
+                                 name: variable.variable,
+                                children: [
+                                { name: "Funds", size: variable.funds }, 
+                                { name: "Decided", size: variable.decisions },
+                                { name: "Paid", size: variable.payments }
+                                ]
+                            };
+                        })
+                    };
+                });
+                data = {name: data["fund"], children: measuresdata}
+                x0.domain(data.map(function(d) { return d.variable; }));
+                x1.domain(fund).rangeRoundBands([0, x0.rangeBand()]);
+                y.domain([0, d3.max(data.fund, function(d) { return d3.max(d.fund, function(d) { return d.value; }); })]);
+                svg.append("g")
+                  .attr("class", "x axis")
+                  .attr("transform", "translate(0," + height + ")")
+                  .call(xAxis);
+                svg.append("g")
+                  .attr("class", "y axis")
+                  .call(yAxis)
+                .append("text")
+                  .attr("transform", "rotate(-90)")
+                  .attr("y", 6)
+                  .attr("dy", ".71em")
+                  .style("text-anchor", "end")
+                  .text("");
+                var state = svg.selectAll(".state")
+                  .data(data.fund)
+                .enter().append("g")
+                  .attr("class", "g")
+                  .attr("transform", function(d) { return "translate(" + x0(d.fund) + ",0)"; });
+            });
+        };
+	</script>
+</head>
+<body>
+    <div id="wrapper">
+        <!-- Navigation -->
+        <nav class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="index.html">Funds of European Union</a>
+            </div>
+            <!-- /.navbar-header -->
+            <div class="navbar-default sidebar" role="navigation">
+                <div class="sidebar-nav navbar-collapse">
+                    <ul class="nav" id="side-menu">
+                        <li>
+                            <a href="index.html"><i class="fa fa-dashboard fa-fw"></i> Country Profile</a>
+                        </li>
+                        <li>
+                            <a href="funds.html"><i class="fa fa-bar-chart-o fa-fw"></i> Funds</a>
+                        </li>
+                        <li>
+                            <a href="to.html"><i class="fa fa-dot-circle-o fa-fw"></i> Thematic Objectives</a>
+                        </li>
+                        <li>
+                            <a href="eu.html"><i class="fa fa-map fa-fw"></i> Map</a>
+                        </li>
+                    </ul>
+					<div class="panel panel-primary">
+                        <div class="panel-heading">
+                            <div class="row">
+                                <div class="col-xs-3">
+                                    <i class="fa fa-bullseye fa-5x"></i>
+                                </div>
+                                <div class="col-xs-9 text-right">
+                                    <h3 class="page-header" id="totitle"></h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+					<div>
+						<h4 class="mytext">Select a thematic objective</h4>
+						<select id="toselector" style="width:100%;" class="mytext">
+							<option value="to1" selected>Employment and social inclusion</option>
+							<option value="to2">Environment, climate change and risk prevention</option>
+                            <option value="to3">Transport</option>
+							<option value="to4">Tourism and cultural heritage</option>
+							<option value="to5">Climate Change Adaptation & Risk Prevention</option>
+							<option value="to6">Competitiveness of SMEs</option>
+							<option value="to7">Discontinued Measures</option>
+                            <option value="to8">Educational & Vocational Training</option>
+                            <option value="to9">Efficient Public Administration </option>
+                            <option value="to10">Environment Protection & Resource Efficiency</option>
+                            <option value="to11">Low-Carbon Economy</option>
+                            <option value="to12">Outermost & Sparsely Populated</option>
+                            <option value="to13">Research & Innovation</option>
+                            <option value="to14">Social Inclusion</option>
+                            <option value="to15">Sustainable & Quality Employment</option>
+                            <option value="to16">Technical Assistance</option>
+                            <option value="to17">Technical Assistance (IPA)</option>
+                            <option value="to18">Multiple Thematic Objectives (ERDF/CF/ESF)</option>
+                            <option value="to19">Network Infrastructures in Transport and Energy</option>
+                            <option value="to20">Information & Communication Technologies</option>
+							<option value="to21">Information & Communication Technologies</option>
+						</select>
+					</div>
+					<div style="vertical-align:bottom;">
+						<a class="mytext" href="https://cohesiondata.ec.europa.eu/" target="_blank">Source: https://cohesiondata.ec.europa.eu/</a>
+					</div>
+					<script>
+						var e = document.getElementById("toselector");
+						var selText = e.options[e.selectedIndex].text;
+						var selValue = e.options[e.selectedIndex].value;
+						changestats(selText, selValue);
+						$("#toselector").on('change', function() {
+							e = document.getElementById("toselector");
+							selText = e.options[e.selectedIndex].text;
+							selValue = e.options[e.selectedIndex].value;
+							changestats(selText, selValue);
+						});
+					</script>
+                </div>
+                <!-- /.sidebar-collapse -->
+            </div>
+            <!-- /.navbar-static-side -->
+        </nav>
+        <div id="page-wrapper">
+            <div class="row">
+                <div class="col-lg-3 col-md-12">
+                    <div class="panel panel-primary">
+                        <div class="panel-heading">
+                            <div class="row">
+                                <div class="col-xs-2">
+                                    <i class="fa fa-euro fa-5x"></i>
+                                </div>
+                                <div class="col-xs-10 text-right">
+                                    <div id="funds" class="huge"></div>
+                                    <div>bn € Funds</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-12">
+                    <div class="panel panel-green">
+                        <div class="panel-heading">
+                            <div class="row">
+                                <div class="col-xs-2">
+                                    <i class="fa fa-thumbs-o-up fa-5x"></i>
+                                </div>
+                                <div class="col-xs-10 text-right">
+                                    <div id="decisions" class="huge"></div>
+                                    <div>bn € Decided</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-12">
+                    <div class="panel panel-primary">
+                        <div class="panel-heading">
+                            <div class="row">
+                                <div class="col-xs-2">
+                                    <i class="fa fa-money fa-5x"></i>
+                                </div>
+                                <div class="col-xs-10 text-right">
+                                    <div id="payments" class="huge"></div>
+                                    <div>bn € Paid</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-12">
+                    <div class="panel panel-green">
+                        <div class="panel-heading">
+                            <div class="row">
+                                <div class="col-xs-2">
+                                    <i class="fa fa-support fa-5x"></i>
+                                </div>
+                                <div class="col-xs-10 text-right">
+                                    <div id="pct" class="huge"></div>
+                                    <div>% Funds paid</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- /.row -->
+            <div class="row">
+                <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <i class="fa fa-bar-chart-o fa-fw"></i> Member states
+                            <div class="pull-right">
+                                <label><input id="input1" type="checkbox" checked="false"> Order</label>
+                            </div>
+                        </div>
+                        <!-- /.panel-heading -->
+                        <div class="panel-body">
+                            <div id="msorder" style="display:block;">
+                                <script>
+									msorder(selValue);
+									$("#toselector").on('change', function() {
+										e = document.getElementById("toselector");
+										selValue = e.options[e.selectedIndex].value;
+										msorder(selValue);
+									});
+								</script>
+                            </div>
+                        </div>
+                        <!-- /.panel-body -->
+                    </div>
+                    <!-- /.panel -->
+                </div>
+            </div>
+            <!-- /.row -->
+			<div class="row">
+                <div class="col-lg-12">
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<i class="fa fa-bar-chart-o fa-fw"></i> Payments timeline
+						</div>
+						<!-- /.panel-heading -->
+						<div class="panel-body">
+							<div class="row">
+								<div class="col-lg-12">
+									<div class="chart-wrapper col-12 d-block" id="chart-line1" style="height:50%;">
+                                        <script type="text/javascript">
+                                            ms_payments(selValue);
+											$("#toselector").on('change', function() {
+												e = document.getElementById("toselector");
+												selValue = e.options[e.selectedIndex].value;
+												ms_payments(selValue);
+											});
+                                        </script>
+                                    </div>
+								</div>
+								<!-- /.col-lg-8 (nested) -->
+							</div>
+							<!-- /.row -->
+						</div>
+						<!-- /.panel-body -->
+					</div>
+					<!-- /.panel -->
+				</div>
+            </div>
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <i class="fa fa-bar-chart-o fa-fw"></i> Funds order
+                        </div>
+                        <!-- /.panel-heading -->
+                        <div class="panel-body">
+                            <div class="row">
+                                <div class="col-lg-12">
+                                    <div class="chart-wrapper col-12 d-block" id="chart-line2" style="height:50%;">
+                                        <script type="text/javascript">
+                                            fundbars(selValue);
+                                            $("#toselector").on('change', function() {
+                                                e = document.getElementById("toselector");
+                                                selValue = e.options[e.selectedIndex].value;
+                                                fundbars(selValue);
+                                            });
+                                        </script>
+                                    </div>
+                                </div>
+                                <!-- /.col-lg-8 (nested) -->
+                            </div>
+                            <!-- /.row -->
+                        </div>
+                        <!-- /.panel-body -->
+                    </div>
+                    <!-- /.panel -->
+                </div>
+            </div>
+        </div>
+        <!-- /#page-wrapper -->
+    </div>
+    <!-- /#wrapper -->
+    <!-- Bootstrap Core JavaScript -->
+    <script src="../vendor/bootstrap/js/bootstrap.min.js"></script>
+    <!-- Metis Menu Plugin JavaScript -->
+    <script src="../vendor/metisMenu/metisMenu.min.js"></script>
+    <script src="../vendor/raphael/raphael.min.js"></script>
+    <!-- Custom Theme JavaScript -->
+    <script src="../dist/js/sb-admin-2.js"></script>
+</body>
+
+</html>
