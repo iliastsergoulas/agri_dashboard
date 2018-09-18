@@ -8,7 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="">
     <meta name="author" content="">
-    <title>Dashboard</title>
+    <title>European Structural and Investment Funds</title>
     <!-- Bootstrap Core CSS -->
     <link href="../vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <!-- MetisMenu CSS -->
@@ -98,9 +98,12 @@
 				.append("g")
 				.attr("transform", "translate(" + marginmsorder.left + "," + marginmsorder.top + ")");
 			d3.json("http://88.99.13.199:3000/ms_aggregate", function(error, data) {
+				var total = 0;
 				data.forEach(function(d) {
-				d.pct = +d.pct;
+					d.pct = +d.pct;
+					total += d.pct;
 				});
+				var msordermean=total / data.length;
 				xmsorder.domain(data.map(function(d) { return d.letter; }));
 				ymsorder.domain([0, d3.max(data, function(d) { return d.pct; })]);
 				var tipmsorder = d3.tip()
@@ -140,6 +143,20 @@
 					.attr("height", function(d) { return heightmsorder - ymsorder(d.pct); })
 					.on('mouseover', tipmsorder.show)
 					.on('mouseout', tipmsorder.hide);
+				svgmsorder.append("line")
+					.style("stroke", "red")
+					.style("stroke-width", "2")
+					.attr("x1", 0)
+					.attr("y1", ymsorder(msordermean))
+					.attr("x2", widthmsorder)
+					.attr("y2", ymsorder(msordermean));
+				svgmsorder.append("text")
+					.attr("x", (3*widthmsorder / 4))             
+					.attr("y", ymsorder(msordermean)-10)
+					.attr("text-anchor", "middle")  
+					.style("font-size", "85%")
+					.style("fill", "red")
+					.text("EU average");
 				svgmsorder.call(tipmsorder);
 				d3.select("#input1").on("change", changepro);
 				var sortTimeout = setTimeout(function() {
@@ -171,14 +188,14 @@
 			d3.select("#dashboard").selectAll("table").remove();
 			function dashboard(id, fData){ /*Creating dashboard for priorities*/
 				var barColor = 'steelblue';
-				function segColor(c){ return {"Employment and social inclusion":"#807dba", "Environment, climate change and risk prevention":"#e08214",
-				"Transport":"#41ab5d", "Tourism and cultural heritage":"#00520b", "Climate Change Adaptation & Risk Prevention":"#f7f322",
+				function segColor(c){ return {"Employment and social inclusion":"#fed98e", "Environment, climate change and risk prevention":"#fb9a99",
+				"Transport":"#41ab5d", "Tourism and cultural heritage":"#c7e9c0", "Climate Change Adaptation & Risk Prevention":"#f7f322",
 				"Competitiveness of SMEs":"#b3b1b6", "Discontinued Measures":"#26dddd",
-				"Educational & Vocational Training":"#807dba", "Efficient Public Administration":"#e08214",
-				"Environment Protection & Resource Efficiency":"#41ab5d", "Low-Carbon Economy":"#00520b", "Outermost & Sparsely Populated":"#f7f322",
-				"Research & Innovation":"#b3b1b6", "Social Inclusion":"#26dddd","Sustainable & Quality Employment":"#807dba", "Technical Assistance":"#e08214",
-				"Technical Assistance (IPA)":"#41ab5d", "Multiple Thematic Objectives (ERDF/CF/ESF)":"#00520b", 
-				"Network Infrastructures in Transport and Energy":"#f7f322","Information & Communication Technologies":"#f7f322","VOID":"#f7f322"}[c]; }
+				"Educational & Vocational Training":"#827127", "Efficient Public Administration":"#b0065a",
+				"Environment Protection & Resource Efficiency":"#00520b", "Low-Carbon Economy":"#1da1f2", "Outermost & Sparsely Populated":"#fb99f7",
+				"Research & Innovation":"#e08214", "Social Inclusion":"#26dddd","Sustainable & Quality Employment":"#807dba", "Technical Assistance":"#312e3f",
+				"Technical Assistance (IPA)":"#3af300", "Multiple Thematic Objectives (ERDF/CF/ESF)":"#41ab5d", 
+				"Network Infrastructures in Transport and Energy":"#a3456e","Information & Communication Technologies":"#5f5e3e","VOID":"#1e2225"}[c]; }
 				// compute total for each state.
 				fData.forEach(function(d){
 					d.total=d.freq["Employment and social inclusion"]+d.freq["Environment, climate change and risk prevention"]+d.freq["Transport"]+
@@ -193,7 +210,7 @@
 				// function to handle histogram.
 				function histoGram(fD){
 					var hG={},    hGDim = {t: 30, r: 50, b: 20, l: 50};
-					hGDim.w = 380 - hGDim.l - hGDim.r, 
+					hGDim.w = 300 - hGDim.l - hGDim.r, 
 					hGDim.h = 300 - hGDim.t - hGDim.b;  
 					//create svg for histogram.
 					var hGsvg = d3.select(id).append("svg")
@@ -456,8 +473,8 @@
 		function ms_payments(selValue){
 			d3.select("#chart-line1").selectAll("svg").remove();
 			// Set the dimensions of the canvas / graph
-            var marginlines = {top: 40, right: 10, bottom: 70, left: 60},
-                widthlines = 850 - marginlines.left - marginlines.right,
+            var marginlines = {top: 40, right: 10, bottom: 70, left: 40},
+                widthlines = 800 - marginlines.left - marginlines.right,
                 heightlines = 400 - marginlines.top - marginlines.bottom;
             // Parse the date / time
             var parseDate = d3.time.format("%Y").parse;
@@ -515,6 +532,15 @@
                         .style("fill", function() { // dynamic colours
                             return d.color = colorlines(d.key); })
                         .text(d.key);
+					svglines.append("g")
+						.attr("class", "y axis")
+						.call(yAxislines)
+						.append("text")
+						.attr("transform", "rotate(-90)")
+						.attr("y", 6)
+						.attr("dy", ".71em")
+						.style("text-anchor", "end")
+						.text("Millions €");
                 });
                 // Add the X Axis
                 svglines.append("g")
@@ -525,38 +551,6 @@
                 svglines.append("g")
                     .attr("class", "y axis")
                     .call(yAxislines);
-                /* Add 'curtain' rectangle to hide entire graph */
-				var curtain = svglines.append('rect')
-					.attr('x', -1 * widthlines)
-					.attr('y', -1 * heightlines)
-					.attr('height', heightlines)
-					.attr('width', widthlines)
-					.attr('class', 'curtain')
-					.attr('transform', 'rotate(180)')
-					.style('fill', '#ffffff')
-				/* Optionally add a guideline */
-				var guideline = svglines.append('line')
-					.attr('stroke', '#333')
-					.attr('stroke-width', 0)
-					.attr('class', 'guide')
-					.attr('x1', 1)
-					.attr('y1', 1)
-					.attr('x2', 1)
-					.attr('y2', heightlines)
-				/* Create a shared transition for anything we're animating */
-				var t = svglines.transition()
-					.duration(1000)
-					.ease('linear')
-					.each('end', function() {
-					d3.select('line.guide')
-						.transition()
-						.style('opacity', 0)
-						.remove()
-					});
-				t.select('rect.curtain')
-					.attr('width', 0);
-				t.select('line.guide')
-					.attr('transform', 'translate(' + widthlines + ', 0)')
           	});
 		}
 	</script>
@@ -656,7 +650,7 @@
         </nav>
         <div id="page-wrapper">
             <div class="row">
-                <div class="col-lg-3 col-md-12">
+                <div class="col-lg-3 col-md-3 col-sm-12">
                     <div class="panel panel-primary">
                         <div class="panel-heading">
                             <div class="row">
@@ -671,7 +665,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-lg-3 col-md-12">
+                <div class="col-lg-3 col-md-3 col-sm-12">
                     <div class="panel panel-green">
                         <div class="panel-heading">
                             <div class="row">
@@ -686,7 +680,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-lg-3 col-md-12">
+                <div class="col-lg-3 col-md-3 col-sm-12">
                     <div class="panel panel-primary">
                         <div class="panel-heading">
                             <div class="row">
@@ -701,7 +695,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-lg-3 col-md-12">
+                <div class="col-lg-3 col-md-3 col-sm-12">
                     <div class="panel panel-green">
                         <div class="panel-heading">
                             <div class="row">
@@ -777,8 +771,8 @@
 						<!-- /.panel-heading -->
 						<div class="panel-body">
 							<div class="row">
-								<div class="col-lg-12">
-									<div class="chart-wrapper col-12 d-block" id="chart-line1" style="height:50%;">
+								<div class="col-xl-12 col-lg-12 col-md-12">
+									<div class="chart-wrapper col-12" id="chart-line1">
                                         <script type="text/javascript">
                                             ms_payments(selValue);
 											$("#countryselector").on('change', function() {
@@ -807,7 +801,7 @@
 						<!-- /.panel-heading -->
 						<div class="panel-body">
 							<div class="row">
-								<div class="col-lg-12">
+								<div class="col-xl-12 col-lg-12 col-md-12">
 									<div id='dashboard' class="row no-gutters d-block"></div>
                                         <script>/*Dashboard*/
 											funds_to_ms(selValue);

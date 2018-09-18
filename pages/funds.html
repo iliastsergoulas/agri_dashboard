@@ -8,7 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="">
     <meta name="author" content="">
-    <title>Dashboard</title>
+    <title>European Structural and Investment Funds</title>
     <!-- Bootstrap Core CSS -->
     <link href="../vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <!-- MetisMenu CSS -->
@@ -100,9 +100,12 @@
             var urlfund='http://88.99.13.199:3000/fund_ms_aggregate?fund=eq.';
             urlfund=urlfund.concat(selValue);
 			d3.json(urlfund, function(error, data) {
+				var total = 0;
 				data.forEach(function(d) {
-				d.pct = +d.pct;
+					d.pct = +d.pct;
+					total += d.pct;
 				});
+				var msordermean=total / data.length;
 				xmsorder.domain(data.map(function(d) { return d.letter; }));
 				ymsorder.domain([0, d3.max(data, function(d) { return d.pct; })]);
 				var tipmsorder = d3.tip()
@@ -134,14 +137,28 @@
 					.attr("width", xmsorder.rangeBand())
 					.attr("y", function(d) { return ymsorder(d.pct); })
 					.attr("fill", function(d) {
-				if (d.letter ==selValue) {
-					return "#4178b4";
-				} 
-					return "#61b95f";
-				})
+						if (d.letter ==selValue) {
+							return "#4178b4";
+						} 
+							return "#61b95f";
+						})
 					.attr("height", function(d) { return heightmsorder - ymsorder(d.pct); })
 					.on('mouseover', tipmsorder.show)
 					.on('mouseout', tipmsorder.hide);
+				svgmsorder.append("line")
+					.style("stroke", "red")
+					.style("stroke-width", "2")
+					.attr("x1", 0)
+					.attr("y1", ymsorder(msordermean))
+					.attr("x2", widthmsorder)
+					.attr("y2", ymsorder(msordermean));
+				svgmsorder.append("text")
+					.attr("x", (3*widthmsorder / 4))             
+					.attr("y", ymsorder(msordermean)-10)
+					.attr("text-anchor", "middle")  
+					.style("font-size", "85%")
+					.style("fill", "red")
+					.text("EU average");
 				svgmsorder.call(tipmsorder);
 				d3.select("#input1").on("change", changepro);
 				var sortTimeout = setTimeout(function() {
@@ -172,7 +189,7 @@
 			d3.select("#chart-line1").selectAll("svg").remove();
 			// Set the dimensions of the canvas / graph
             var marginlines = {top: 40, right: 30, bottom: 70, left: 70},
-                widthlines = 850 - marginlines.left - marginlines.right,
+                widthlines = 900 - marginlines.left - marginlines.right,
                 heightlines = 400 - marginlines.top - marginlines.bottom;
             // Parse the date / time
             var parseDate = d3.time.format("%Y").parse;
@@ -220,7 +237,7 @@
                     svglines.append("path")
                         .attr("class", "line")
                         .style("stroke", function() { // Add the colours dynamically
-                            return d.color = colorlines(d.key); })
+                            return d.color = colorlines(d.key+1); })
                         .attr("d", priceline(d.values));
                     // Add the Legend
                     svglines.append("text")
@@ -228,8 +245,17 @@
                         .attr("y", heightlines + (marginlines.bottom/2)+ 5)
                         .attr("class", "legend")    // style the legend
                         .style("fill", function() { // dynamic colours
-                            return d.color = colorlines(d.key); })
+                            return d.color = colorlines(d.key+1); })
                         .text(d.key);
+					svglines.append("g")
+						.attr("class", "y axis")
+						.call(yAxislines)
+						.append("text")
+						.attr("transform", "rotate(-90)")
+						.attr("y", 6)
+						.attr("dy", ".71em")
+						.style("text-anchor", "end")
+						.text("Millions €");
                 });
                 // Add the X Axis
                 svglines.append("g")
@@ -240,84 +266,106 @@
                 svglines.append("g")
                     .attr("class", "y axis")
                     .call(yAxislines);
-                /* Add 'curtain' rectangle to hide entire graph */
-                var curtain = svglines.append('rect')
-                    .attr('x', -1 * widthlines)
-                    .attr('y', -1 * heightlines)
-                    .attr('height', heightlines)
-                    .attr('width', widthlines)
-                    .attr('class', 'curtain')
-                    .attr('transform', 'rotate(180)')
-                    .style('fill', '#ffffff')
-                /* Optionally add a guideline */
-                var guideline = svglines.append('line')
-                    .attr('stroke', '#333')
-                    .attr('stroke-width', 0)
-                    .attr('class', 'guide')
-                    .attr('x1', 1)
-                    .attr('y1', 1)
-                    .attr('x2', 1)
-                    .attr('y2', heightlines)
-                /* Create a shared transition for anything we're animating */
-                var t = svglines.transition()
-                    .duration(1000)
-                    .ease('linear')
-                    .each('end', function() {
-                    d3.select('line.guide')
-                        .transition()
-                        .style('opacity', 0)
-                        .remove()
-                    });
-                t.select('rect.curtain')
-                    .attr('width', 0);
-                t.select('line.guide')
-                    .attr('transform', 'translate(' + widthlines + ', 0)')
             });
 		}
         function fundbars(){
-            d3.json("http://88.99.13.199:3000/fund_melt_aggregate_df", function(error, data) {
-                var measuresdata = d3.nest()
-                  .key(function(d) { return d.fund; })
-                  .entries(data)
-                  .map(function(fund) {
-                    return {
-                        name: fund.key,
-                        children: fund.values.map(function(variable) {
-                            return {
-                                 name: variable.variable,
-                                children: [
-                                { name: "Funds", size: variable.funds }, 
-                                { name: "Decided", size: variable.decisions },
-                                { name: "Paid", size: variable.payments }
-                                ]
-                            };
-                        })
-                    };
-                });
-                data = {name: data["fund"], children: measuresdata}
-                x0.domain(data.map(function(d) { return d.variable; }));
-                x1.domain(fund).rangeRoundBands([0, x0.rangeBand()]);
-                y.domain([0, d3.max(data.fund, function(d) { return d3.max(d.fund, function(d) { return d.value; }); })]);
-                svg.append("g")
-                  .attr("class", "x axis")
-                  .attr("transform", "translate(0," + height + ")")
-                  .call(xAxis);
-                svg.append("g")
-                  .attr("class", "y axis")
-                  .call(yAxis)
-                .append("text")
-                  .attr("transform", "rotate(-90)")
-                  .attr("y", 6)
-                  .attr("dy", ".71em")
-                  .style("text-anchor", "end")
-                  .text("");
-                var state = svg.selectAll(".state")
-                  .data(data.fund)
-                .enter().append("g")
-                  .attr("class", "g")
-                  .attr("transform", function(d) { return "translate(" + x0(d.fund) + ",0)"; });
-            });
-        };
+			d3.select("#chart-line2").selectAll("svg").remove();
+			var marginbars = {top: 40, right: 50, bottom: 20, left: 40},
+				widthbars = 800 - marginbars.left - marginbars.right,
+				heightbars = 400 - marginbars.top - marginbars.bottom;
+			var x0bars = d3.scale.ordinal()
+				.rangeRoundBands([0, widthbars], .1);
+			var x1bars = d3.scale.ordinal();
+			var ybars = d3.scale.linear()
+				.range([heightbars, 0]);
+			var colorRangebars = d3.scale.category20c();
+			var colorbars = d3.scale.ordinal()
+				.range(colorRangebars.range());
+			var xAxisbars = d3.svg.axis()
+				.scale(x0bars)
+				.orient("bottom");
+			var yAxisbars = d3.svg.axis()
+				.scale(ybars)
+				.orient("left")
+				.tickFormat(d3.format(".2"));
+			var divTooltip = d3.select("#chart-line2").append("div").attr("class", "toolTip");
+			var svgbars = d3.select("#chart-line2").append("svg")
+				.attr("width", widthbars + marginbars.left + marginbars.right)
+				.attr("height", heightbars + marginbars.top + marginbars.bottom)
+				.call(responsivefy)
+				.append("g")
+				.attr("transform", "translate(" + marginbars.left + "," + marginbars.top + ")");
+			d3.json("http://88.99.13.199:3000/fund_aggregate?select=fund,funds,decisions,payments", function(error, data) {
+				var options = d3.keys(data[0]).filter(function(key) { return key !== "fund"; });
+				data.forEach(function(d) {
+					d.valores = options.map(function(name) { return {name: name, value: +d[name]/1000000}; });
+				});
+				x0bars.domain(data.map(function(d) {return d.fund;}));
+				x1bars.domain(options).rangeRoundBands([0, x0bars.rangeBand()]);
+				ybars.domain([0, d3.max(data, function(d) { return d3.max(d.valores, function(d) { return d.value; }); })]);
+				svgbars.append("g")
+					.attr("class", "x axis")
+					.attr("transform", "translate(0," + heightbars + ")")
+					.call(xAxisbars);
+				svgbars.append("g")
+					.attr("class", "y axis")
+					.call(yAxisbars)
+					.append("text")
+					.attr("transform", "rotate(-90)")
+					.attr("y", 6)
+					.attr("dy", ".71em")
+					.style("text-anchor", "end")
+					.text("Millions €");
+				var barbars = svgbars.selectAll(".bar")
+					.data(data)
+					.enter().append("g")
+					.attr("class", "rect")
+					.attr("transform", function(d) { return "translate(" + x0bars(d.fund) + ",0)"; });
+				barbars.selectAll("rect")
+					.data(function(d) { return d.valores; })
+					.enter().append("rect")
+					.attr("width", x1bars.rangeBand())
+					.attr("x", function(d) { return x1bars(d.name); })
+					.attr("y", function(d) { return ybars(d.value); })
+					.attr("value", function(d){return d.name;})
+					.attr("height", function(d) { return heightbars - ybars(d.value); })
+					.style("fill", function(d) { return colorbars(d.name); })
+					.append("svg:title")
+					.text(function(d, i) { return d.fund+"<br>Προτεραιότητα "+d.name+"<br>"+d.value+"εκατ. Ευρώ"; });;
+				barbars
+					.on("mouseover", function(d){
+						divTooltip.style("left", (d3.event.pageX+10)+"px");
+						divTooltip.style("top", (d3.event.pageY+15)+"px");
+						divTooltip.style("display", "inline-block");
+						var xbars = d3.event.pageX, ybars = d3.event.pageY
+						var elements = document.querySelectorAll(':hover');
+						l = elements.length
+						l = l-1
+						elementData = elements[l].__data__
+						divTooltip.html((d.fund)+"<br>Προτεραιότητα "+elementData.name+"<br>"+elementData.value+"εκατ. Ευρώ");
+					});
+				barbars
+					.on("mouseout", function(d){
+						divTooltip.style("display", "none");
+					});
+				var legendbars = svgbars.selectAll(".legend")
+					.data(options.slice())
+					.enter().append("g")
+					.attr("class", "legend")
+					.attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+				legendbars.append("rect")
+					.attr("x", widthbars - 18)
+					.attr("width", 18)
+					.attr("height", 18)
+					.style("fill", colorbars);
+				legendbars.append("text")
+					.attr("x", widthbars - 24)
+					.attr("y", 9)
+					.attr("dy", ".35em")
+					.style("text-anchor", "end")
+					.text(function(d) { return d; });
+			});
+		};
 	</script>
 </head>
 <body>
@@ -331,7 +379,7 @@
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                 </button>
-                <a class="navbar-brand" href="index.html">Funds of European Union</a>
+                <a class="navbar-brand" href="index.html">Structural and Investment Funds</a>
             </div>
             <!-- /.navbar-header -->
             <div class="navbar-default sidebar" role="navigation">
@@ -392,60 +440,60 @@
         </nav>
         <div id="page-wrapper">
             <div class="row">
-                <div class="col-lg-3 col-md-12">
+                <div class="col-lg-3 col-md-3 col-sm-12 col-xs-12">
                     <div class="panel panel-primary">
                         <div class="panel-heading">
                             <div class="row">
-                                <div class="col-xs-2">
+                                <div class="col-xs-2 col-sm-2">
                                     <i class="fa fa-euro fa-5x"></i>
                                 </div>
-                                <div class="col-xs-10 text-right">
-                                    <div id="funds" class="huge"></div>
+                                <div class="col-xs-10 col-sm-10 text-right">
+                                    <div id="funds" class="mystats"></div>
                                     <div>bn € Funds</div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="col-lg-3 col-md-12">
+                <div class="col-lg-3 col-md-3 col-sm-12 col-xs-12">
                     <div class="panel panel-green">
                         <div class="panel-heading">
                             <div class="row">
-                                <div class="col-xs-2">
+                                <div class="col-xs-2 col-sm-2">
                                     <i class="fa fa-thumbs-o-up fa-5x"></i>
                                 </div>
-                                <div class="col-xs-10 text-right">
-                                    <div id="decisions" class="huge"></div>
+                                <div class="col-xs-10 col-sm-10 text-right">
+                                    <div id="decisions" class="mystats"></div>
                                     <div>bn € Decided</div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="col-lg-3 col-md-12">
+                <div class="col-lg-3 col-md-3 col-sm-12 col-xs-12">
                     <div class="panel panel-primary">
                         <div class="panel-heading">
                             <div class="row">
-                                <div class="col-xs-2">
+                                <div class="col-xs-2 col-sm-2">
                                     <i class="fa fa-money fa-5x"></i>
                                 </div>
-                                <div class="col-xs-10 text-right">
-                                    <div id="payments" class="huge"></div>
+                                <div class="col-xs-10 col-sm-10 text-right">
+                                    <div id="payments" class="mystats"></div>
                                     <div>bn € Paid</div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="col-lg-3 col-md-12">
+                <div class="col-lg-3 col-md-3 col-sm-12 col-xs-12">
                     <div class="panel panel-green">
                         <div class="panel-heading">
                             <div class="row">
-                                <div class="col-xs-2">
+                                <div class="col-xs-2 col-sm-2">
                                     <i class="fa fa-support fa-5x"></i>
                                 </div>
-                                <div class="col-xs-10 text-right">
-                                    <div id="pct" class="huge"></div>
+                                <div class="col-xs-10 col-sm-10 text-right">
+                                    <div id="pct" class="mystats"></div>
                                     <div>% Funds paid</div>
                                 </div>
                             </div>

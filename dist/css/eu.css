@@ -438,6 +438,9 @@ rect.background {
 	.firstword1 h2 {
 	    font-size: 1.3vw
 	}
+	.mystats {
+		font-size: 3vw
+	}
 	.tabulator{
 		font-size:1vw
 	}
@@ -478,6 +481,9 @@ rect.background {
 	}
 	.firstword1 h2 {
 	    font-size: 4vw
+	}
+	.mystats {
+		font-size: 6.5vw
 	}
 	.tabulator{
 		font-size:1.5vw

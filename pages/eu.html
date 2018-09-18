@@ -8,7 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="">
     <meta name="author" content="">
-    <title>Dashboard</title>
+    <title>European Structural and Investment Funds</title>
     <!-- Bootstrap Core CSS -->
     <link href="../vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <!-- MetisMenu CSS -->
@@ -107,130 +107,128 @@
 						<!-- /.panel-heading -->
 						<div class="panel-body">
 							<div class="world row">
-								<div class="map col-xs-12 col-sm-12 col-md-8 col-lg-8 col-xl-8 d-inline-block pull-left" style="border:5px #cbcbcb double;vertical-align:top;"></div> 
-								  <div class="col-xs-12 col-sm-12 col-md-4 col-lg-4 col-xl-4 divbelow d-inline-block pull-left">         
+								<div class="map col-xs-12 col-sm-12 col-md-8 col-lg-8 col-xl-8 d-inline-block pull-left" style="border:3px #cbcbcb double;vertical-align:top;"></div> 
+								<div class="col-xs-12 col-sm-12 col-md-4 col-lg-4 col-xl-4 divbelow d-inline-block pull-right">         
 									<div class="areaLegend d-block row no-gutters" style="width:90%;"></div>
-									<div class="d-block row no-gutters" style="height:30%;">
-										<h6 style="height:10px;">Select</h6>
-										<div class="select" style="display:block;">
-											<select id="mapselection" class="mytext" style="width:95%;">
-												<optgroup label="Εκχωρημένες Δράσεις σε Περιφέρειες">
-													<option>Absorption (% RDP)</option>   
-													<option>Funds (mil €)</option>                             
-													<option>Decisions (mil €)</option>
-													<option>Payments (mil €)</option>
-												</optgroup>
-											</select>
-											<div class="select__arrow"></div>
-										</div>
+									<div style="height:80px;"></div>
+									<h6 style="display:block;height:40px;">Select</h6>
+									<div class="select d-block">
+										<select id="mapselection" class="mytext" style="width:90%;">
+											<optgroup label="EU figures">
+												<option>Absorption (% RDP)</option>   
+												<option>Funds (mil €)</option>                             
+												<option>Decisions (mil €)</option>
+												<option>Payments (mil €)</option>
+											</optgroup>
+										</select>
+										<div class="select__arrow"></div>
 									</div>
-									<p class="mytext"> Data until 31/12/2017<p></p>
-								  </div>
-								  <script>
-									  d3.json('http://88.99.13.199:3000/ms_aggregate', function(err, mydata) { 
-										  var mapdata = {};
-										  var rdpfunds={};
-										  var rdpdecisions={};
-										  var rdppct={};
-										  var rdppaid={};
-										  rdpfunds['areas']={};
-										  rdpdecisions['areas']={};
-										  rdppct['areas']={};
-										  rdppaid['areas']={};
-										  var maprdpfundsmax=0;
-										  var maprdpdecisionsmax=0;
-										  var maprdppctmax=0;
-										  var maprdppaidmax=0;
-										  mydata.forEach(function(val) {
-											  //Funds (mil €)
-											  rdpfunds['areas'][[val.letter]]={};
-											  rdpfunds['areas'][[val.letter]]['value']=val.funds/1000000;
-											  rdpfunds['areas'][[val.letter]]['tooltip']={content:"<span style=\"font-weight:bold;\">"+val.letter+"</span><br />Funds: " + Number((val.funds/1000000).toFixed(2)) + " (mil €)"};
-											  maprdpfundsmax=Math.max(val.funds, maprdpfundsmax);
-											  //Decisions (mil €)
-											  rdpdecisions['areas'][[val.letter]]={};
-											  rdpdecisions['areas'][[val.letter]]['value']=val.decisions/1000000;
-											  rdpdecisions['areas'][[val.letter]]['tooltip']={content:"<span style=\"font-weight:bold;\">"+val.letter+"</span><br />Decisions: " + Number((val.decisions/1000000).toFixed(2)) + " (mil €)"};
-											  maprdpdecisionsmax=Math.max(val.decisions, maprdpdecisionsmax);
-											  //Absorption (mil €)
-											  rdppct['areas'][[val.letter]]={};
-											  rdppct['areas'][[val.letter]]['value']=100*val.pct;
-											  rdppct['areas'][[val.letter]]['tooltip']={content:"<span style=\"font-weight:bold;\">"+val.letter+"</span><br />Absorption: " + Number((val.pct*100).toFixed(2)) + " %"};
-											  maprdppctmax=Math.max(val.pct, maprdppctmax);
-											  //Payments (mil €)
-											  rdppaid['areas'][[val.letter]]={};
-											  rdppaid['areas'][[val.letter]]['value']=val.payments/1000000;
-											  rdppaid['areas'][[val.letter]]['tooltip']={content:"<span style=\"font-weight:bold;\">"+val.letter+"</span><br />Payments : " + Number((val.payments/1000000).toFixed(2)) + " (mil €)"};
-											  maprdppaidmax=Math.max(val.payments, maprdppaidmax);
-										  });
-										  mapdata["Funds (mil €)"]=rdpfunds;
-										  mapdata["Decisions (mil €)"]=rdpdecisions;
-										  mapdata["Absorption (% RDP)"]=rdppct;
-										  mapdata["Payments (mil €)"]=rdppaid;
-										  $(function () {/*Data for regions map*/
-											  $("#mapselection").on('change', function() {
-												  var e = document.getElementById("mapselection");
-												  var strUser = e.options[e.selectedIndex].value;
-												  if (strUser=="Funds (mil €)") {
-													  maxjson=maprdpfundsmax/1000000;
-												  } else if (strUser=="Decisions (mil €)") {
-													  maxjson=maprdpdecisionsmax/1000000;
-												  } else if (strUser=="Absorption (mil €)") {
-													  maxjson=maprdppctmax*100;
-												  } else if (strUser=="Payments (mil €)") {
-													  maxjson=maprdppaidmax/1000000;
-												  };
-												  $(".world").trigger('update', [{
-													  mapOptions: {legend: {area: {slices: [
-															  {max: maxjson/5,attrs: {fill: "#a1d99b"},label: "Less than "+(maxjson/5).toFixed(2)},
-															  {min: maxjson/5,max: (2*maxjson/5),attrs: {fill: "#74c476"},label: "From "+(maxjson/5).toFixed(2)+" to "+(2*maxjson/5).toFixed(2)},
-															  {min: (2*maxjson/5),max: (3*maxjson/5),attrs: {fill: "#41ab5d"},label: "From "+ (2*maxjson/5).toFixed(2)+" to "+(3*maxjson/5).toFixed(2)},
-															  {min: (3*maxjson/5),max: (4*maxjson/5),attrs: {fill: "#238b45"},label: "From "+ (3*maxjson/5).toFixed(2)+" to "+(4*maxjson/5).toFixed(2)},
-															  {min: (4*maxjson/5),attrs: {fill: "#00441b"},label: "Over "+ (4*maxjson/5).toFixed(2)}
-														  ]}}}
-												  }]);
-												  $(".world").trigger('update', [{
-													  mapOptions: mapdata[strUser],animDuration: 300
-												  }]);
-												  $(".world").trigger('update', [{
-													  mapOptions: {legend: {area: {title: strUser}}}
-												  }]);
-											  });
-											  var e = document.getElementById("mapselection");
-											  var strUser = e.options[e.selectedIndex].value;
-											  var maxjson=100*maprdppctmax;
-											  // Mapael initialisation
-											  $world = $(".world");
-											  $world.mapael({
-												  map: {
-													  name: "eu",
-													  defaultArea: {attrs: {fill: "#fff",stroke: "#232323","stroke-width": 0.3}},
-													  defaultPlot: {
-														  text: {attrs: {fill: "#b4b4b4","font-weight": "normal"},
-															  attrsHover: {fill: "#fff","font-weight": "bold"}
-														  }
-													  }
-													  , zoom: {enabled: true, step: 0.25, maxLevel: 20}
-												  },
-												  legend: {
-													  area: {
-														  display: true,title: strUser,marginBottom: 7,
-														  slices: [
-															  {max: maxjson/5,attrs: {fill: "#a1d99b"},label: "Less than "+(maxjson/5).toFixed(2)},
-															  {min: maxjson/5,max: (2*maxjson/5),attrs: {fill: "#74c476"},label: "From "+(maxjson/5).toFixed(2)+" to "+(2*maxjson/5).toFixed(2)},
-															  {min: (2*maxjson/5),max: (3*maxjson/5),attrs: {fill: "#41ab5d"},label: "From "+ (2*maxjson/5).toFixed(2)+" to "+(3*maxjson/5).toFixed(2)},
-															  {min: (3*maxjson/5),max: (4*maxjson/5),attrs: {fill: "#238b45"},label: "From "+ (3*maxjson/5).toFixed(2)+" to "+(4*maxjson/5).toFixed(2)},
-															  {min: (4*maxjson/5),attrs: {fill: "#00441b"},label: "Over "+ (4*maxjson/5).toFixed(2)}
-														  ]
-													  }
-												  },
-												  areas: mapdata["Absorption (% RDP)"]['areas']
-											  });
-										  });
-									  });
-								  </script>
+									<div style="height:40%;"></div>
+									<p class="mytext"> Data until 31/12/2017</p>
 								</div>
-								<!-- /.col-lg-8 (nested) -->
+								<script>
+									d3.json('http://88.99.13.199:3000/ms_aggregate', function(err, mydata) { 
+										var mapdata = {};
+										var rdpfunds={};
+										var rdpdecisions={};
+										var rdppct={};
+										var rdppaid={};
+										rdpfunds['areas']={};
+										rdpdecisions['areas']={};
+										rdppct['areas']={};
+										rdppaid['areas']={};
+										var maprdpfundsmax=0;
+										var maprdpdecisionsmax=0;
+										var maprdppctmax=0;
+										var maprdppaidmax=0;
+										mydata.forEach(function(val) {
+											//Funds (mil €)
+											rdpfunds['areas'][[val.letter]]={};
+											rdpfunds['areas'][[val.letter]]['value']=val.funds/1000000;
+											rdpfunds['areas'][[val.letter]]['tooltip']={content:"<span style=\"font-weight:bold;\">"+val.letter+"</span><br />Funds: " + Number((val.funds/1000000).toFixed(2)) + " (mil €)"};
+											maprdpfundsmax=Math.max(val.funds, maprdpfundsmax);
+											//Decisions (mil €)
+											rdpdecisions['areas'][[val.letter]]={};
+											rdpdecisions['areas'][[val.letter]]['value']=val.decisions/1000000;
+											rdpdecisions['areas'][[val.letter]]['tooltip']={content:"<span style=\"font-weight:bold;\">"+val.letter+"</span><br />Decisions: " + Number((val.decisions/1000000).toFixed(2)) + " (mil €)"};
+											maprdpdecisionsmax=Math.max(val.decisions, maprdpdecisionsmax);
+											//Absorption (mil €)
+											rdppct['areas'][[val.letter]]={};
+											rdppct['areas'][[val.letter]]['value']=100*val.pct;
+											rdppct['areas'][[val.letter]]['tooltip']={content:"<span style=\"font-weight:bold;\">"+val.letter+"</span><br />Absorption: " + Number((val.pct*100).toFixed(2)) + " %"};
+											maprdppctmax=Math.max(val.pct, maprdppctmax);
+											//Payments (mil €)
+											rdppaid['areas'][[val.letter]]={};
+											rdppaid['areas'][[val.letter]]['value']=val.payments/1000000;
+											rdppaid['areas'][[val.letter]]['tooltip']={content:"<span style=\"font-weight:bold;\">"+val.letter+"</span><br />Payments : " + Number((val.payments/1000000).toFixed(2)) + " (mil €)"};
+											maprdppaidmax=Math.max(val.payments, maprdppaidmax);
+										});
+										mapdata["Funds (mil €)"]=rdpfunds;
+										mapdata["Decisions (mil €)"]=rdpdecisions;
+										mapdata["Absorption (% RDP)"]=rdppct;
+										mapdata["Payments (mil €)"]=rdppaid;
+										$(function () {/*Data for regions map*/
+											$("#mapselection").on('change', function() {
+										  	var e = document.getElementById("mapselection");
+												var strUser = e.options[e.selectedIndex].value;
+												if (strUser=="Funds (mil €)") {
+													maxjson=maprdpfundsmax/1000000;
+												} else if (strUser=="Decisions (mil €)") {
+													maxjson=maprdpdecisionsmax/1000000;
+												} else if (strUser=="Absorption (mil €)") {
+													maxjson=maprdppctmax*100;
+												} else if (strUser=="Payments (mil €)") {
+													maxjson=maprdppaidmax/1000000;
+												};
+												$(".world").trigger('update', [{
+													mapOptions: {legend: {area: {slices: [
+														  	{max: maxjson/5,attrs: {fill: "#a1d99b"},label: "Less than "+(maxjson/5).toFixed(2)},
+															{min: maxjson/5,max: (2*maxjson/5),attrs: {fill: "#74c476"},label: "From "+(maxjson/5).toFixed(2)+" to "+(2*maxjson/5).toFixed(2)},
+															{min: (2*maxjson/5),max: (3*maxjson/5),attrs: {fill: "#41ab5d"},label: "From "+ (2*maxjson/5).toFixed(2)+" to "+(3*maxjson/5).toFixed(2)},
+															{min: (3*maxjson/5),max: (4*maxjson/5),attrs: {fill: "#238b45"},label: "From "+ (3*maxjson/5).toFixed(2)+" to "+(4*maxjson/5).toFixed(2)},
+															{min: (4*maxjson/5),attrs: {fill: "#00441b"},label: "Over "+ (4*maxjson/5).toFixed(2)}
+														]}}}
+												}]);
+												$(".world").trigger('update', [{
+													mapOptions: mapdata[strUser],animDuration: 300
+												}]);
+												$(".world").trigger('update', [{
+												  	mapOptions: {legend: {area: {title: strUser}}}
+												}]);
+											});
+											var e = document.getElementById("mapselection");
+											var strUser = e.options[e.selectedIndex].value;
+											var maxjson=100*maprdppctmax;
+											// Mapael initialisation
+											$world = $(".world");
+											$world.mapael({
+											  	map: {
+													name: "eu",
+													defaultArea: {attrs: {fill: "#fff",stroke: "#232323","stroke-width": 0.3}},
+													defaultPlot: {
+													 	text: {attrs: {fill: "#b4b4b4","font-weight": "normal"},
+															attrsHover: {fill: "#fff","font-weight": "bold"}
+														}
+													}
+													, zoom: {enabled: true, step: 0.25, maxLevel: 20}
+												},
+												legend: {
+													area: {
+														display: true,title: strUser,marginBottom: 7,
+														slices: [
+															{max: maxjson/5,attrs: {fill: "#a1d99b"},label: "Less than "+(maxjson/5).toFixed(2)},
+															{min: maxjson/5,max: (2*maxjson/5),attrs: {fill: "#74c476"},label: "From "+(maxjson/5).toFixed(2)+" to "+(2*maxjson/5).toFixed(2)},
+															{min: (2*maxjson/5),max: (3*maxjson/5),attrs: {fill: "#41ab5d"},label: "From "+ (2*maxjson/5).toFixed(2)+" to "+(3*maxjson/5).toFixed(2)},
+															{min: (3*maxjson/5),max: (4*maxjson/5),attrs: {fill: "#238b45"},label: "From "+ (3*maxjson/5).toFixed(2)+" to "+(4*maxjson/5).toFixed(2)},
+															{min: (4*maxjson/5),attrs: {fill: "#00441b"},label: "Over "+ (4*maxjson/5).toFixed(2)}
+														]
+													}
+												},
+												areas: mapdata["Absorption (% RDP)"]['areas']
+											});
+										});
+									});
+								</script>
 							</div>
 							<!-- /.row -->
 						</div>
